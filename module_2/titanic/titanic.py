@@ -3,7 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn import tree
-from sklearn.model_selection import train_test_split, cross_val_score
+from sklearn.model_selection import train_test_split, cross_val_score, GridSearchCV
+from sklearn.ensemble import RandomForestClassifier
 
 titanic = pd.read_csv('module_2/titanic/train.csv')
 # print(titanic.head())
@@ -30,8 +31,8 @@ clf.fit(X, y)
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=42)
 clf = tree.DecisionTreeClassifier(criterion='entropy', max_depth=3)
 clf.fit(X_train, y_train)
-print(clf.score(X_train, y_train))
-print(clf.score(X_test, y_test))
+# print(clf.score(X_train, y_train))
+# print(clf.score(X_test, y_test))
 
 # to identify the most effective tree depth, do the following
 scores_data = pd.DataFrame()
@@ -49,8 +50,21 @@ for max_depth in max_depth_values:
 data_scores_long = pd.melt(scores_data, id_vars=['max_depth'], value_vars=['train_score', 'test_score', 'mean_cross_val_score'], 
     var_name='set_types', value_name='score')
 sns.lineplot(x='max_depth', y='score', hue='set_types', data=data_scores_long)
-plt.show()
+# plt.show()
 # Found the most effective tree depth in cross validation and trained the model with it, and check it on test data
 best_clf = tree.DecisionTreeClassifier(criterion='entropy', max_depth=10)
 best_clf.fit(X_train, y_train)
-print(best_clf.score(X_test, y_test))
+# print(best_clf.score(X_test, y_test))
+# ==========================================Random_forest
+forest_clf = RandomForestClassifier()
+parameters = {'n_estimators': [10, 20, 30], 'max_depth':[4,5,6], 'min_samples_leaf': [10,20],'min_samples_split':[10,30,50]}
+grid_search_cv = GridSearchCV(forest_clf, parameters,cv=5)
+grid_search_cv.fit(X_train, y_train)
+print(grid_search_cv.fit(X_train, y_train))
+print(grid_search_cv.best_params_)
+best_clf = grid_search_cv.best_estimator_
+print('best_clf', best_clf.score(X_test, y_test))
+# find most valuable features
+feature_importances = best_clf.feature_importances_
+feature_importances_df = pd.DataFrame({'feature':list(X_train),'feature_importances': feature_importances}).sort_values(by='feature_importances', ascending=False)
+print(feature_importances_df)
